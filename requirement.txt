@@ -1,0 +1,10 @@
+langdetect
+sentence-transformers
+scikit-learn
+pandas
+pdfplumber
+torch
+re
+pickle
+csv
+datetime
