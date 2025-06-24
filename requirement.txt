@@ -8,3 +8,7 @@ re
 pickle
 csv
 datetime
+SpeechRecognition 
+pyttsx3
+pipwin
+pyaudio

@@ -2,10 +2,9 @@ import os
 import csv
 from datetime import datetime
 import pandas as pd
-from faq_matcher import match_faq, faq_data 
-from utils import detect_language
-from doc_searcher import search_document
-
+from src.faq_matcher import match_faq, faq_data
+from src.utils import detect_language
+from src.doc_searcher import search_document
 
 # Paths
 FAQ_PATHS = {
@@ -14,14 +13,16 @@ FAQ_PATHS = {
 }
 LOG_PATH = "data/asked_questions_log.csv"
 UNANSWERED_PATH = "data/unanswered_questions.csv"
-THRESHOLD = 3  # frequency threshold to auto-add to FAQs
+THRESHOLD = 3  # Promote to FAQ after 3 document hits
 
 # Ensure log files exist
-for path, header in [(LOG_PATH, ['timestamp','lang','question','source','answer','frequency']),
-                     (UNANSWERED_PATH, ['timestamp','lang','question'])]:
+for path, header in [
+    (LOG_PATH, ['timestamp', 'lang', 'question', 'source', 'answer', 'frequency']),
+    (UNANSWERED_PATH, ['timestamp', 'lang', 'question'])
+]:
     if not os.path.exists(path):
         with open(path, 'w', newline='', encoding='utf-8') as f:
-            writer = csv.writer(f)
+            writer = csv.writer(f, quoting=csv.QUOTE_ALL)
             writer.writerow(header)
 
 
@@ -34,22 +35,46 @@ def get_updated_frequency(query):
 
 
 def log_question(query, lang, source, answer):
-    freq = get_updated_frequency(query)
-    with open(LOG_PATH, 'a', newline='', encoding='utf-8') as f:
-        writer = csv.writer(f)
-        writer.writerow([
-            datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            lang,
-            query,
-            source,
-            answer.replace('\n',' ')[:200],
-            freq
-        ])
+    cleaned_answer = (
+        answer[:200].replace("\n", " ").replace("[1m", "").replace("[0m", "")
+    )
+
+    # Read existing log
+    if os.path.exists(LOG_PATH):
+        df = pd.read_csv(LOG_PATH)
+    else:
+        df = pd.DataFrame(columns=['timestamp', 'lang', 'question', 'source', 'answer', 'frequency'])
+
+    # Normalize query for comparison (case-insensitive match)
+    mask = df['question'].str.lower() == query.lower()
+
+    if mask.any():
+        # Update the most recent matching row
+        index = df[mask].index[-1]
+        df.at[index, 'frequency'] += 1
+        df.at[index, 'timestamp'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        df.at[index, 'source'] = source
+        df.at[index, 'answer'] = cleaned_answer
+    else:
+        # Add new row
+        new_row = {
+            'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            'lang': lang,
+            'question': query,
+            'source': source,
+            'answer': cleaned_answer,
+            'frequency': 1
+        }
+        df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
+
+    # Save updated log
+    df.to_csv(LOG_PATH, index=False, quoting=csv.QUOTE_ALL)
+
 
 
 def log_unanswered(query, lang):
     with open(UNANSWERED_PATH, 'a', newline='', encoding='utf-8') as f:
-        writer = csv.writer(f)
+        writer = csv.writer(f, quoting=csv.QUOTE_ALL)
         writer.writerow([
             datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             lang,
@@ -61,49 +86,17 @@ def check_and_update_faqs():
     df = pd.read_csv(LOG_PATH)
     freq = df[df['source'] == 'DOC']['question'].value_counts()
     to_promote = freq[freq >= THRESHOLD].index.tolist()
+
     if not to_promote:
         return
 
     for lang, path in FAQ_PATHS.items():
         df_faq = pd.read_excel(path)
-        if lang == 'en':
-            q_col, a_col = 'Question', 'Answer'
-        else:
-            q_col, a_col = 'प्रश्न', 'उत्तर'
+        q_col, a_col = ('Question', 'Answer') if lang == 'en' else ('प्रश्न', 'उत्तर')
 
         for q in to_promote:
             if q not in df_faq[q_col].values:
-                df_faq = df_faq.append({q_col: q, a_col: ''}, ignore_index=True)
-                print(f"[INFO] Auto-added new FAQ entry for '{q}' in {lang} file.")
+                df_faq = pd.concat([df_faq, pd.DataFrame([{q_col: q, a_col: ''}])], ignore_index=True)
+                print(f"[INFO] ✅ Auto-added new FAQ: '{q}' in {lang.upper()} FAQ")
 
         df_faq.to_excel(path, index=False)
-
-
-if __name__ == '__main__':
-    print("📢 Recruitment FAQ Chatbot (English / मराठी)")
-    print("Type 'exit' to quit\n")
-
-    while True:
-        user_input = input("You: ")
-        if user_input.lower() in ['exit','quit']:
-            print("Bot: Thank you! जय हिंद 🚩")
-            break
-
-        lang = detect_language(user_input)
-        answer = match_faq(user_input, lang)
-
-        if answer:
-            print(f"Bot (from FAQ): {answer}")
-            source = 'FAQ'
-        else:
-            print("Bot: Let me check the official document... 📄")
-            answer = search_document(user_input, lang)
-            print(f"Bot (from document): {answer}")
-            source = 'DOC'
-            if 'No relevant information' in answer:
-                log_unanswered(user_input, lang)
-
-        log_question(user_input, lang, source, answer)
-        check_and_update_faqs()
-    
-        
