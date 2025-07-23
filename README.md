@@ -32,47 +32,51 @@ An intelligent chatbot designed to answer recruitment FAQs in both English and M
 
 ## 🚀 How to Run
 
-### 1️⃣ Install dependencies
+    ### 1️⃣ Install dependencies
 
-Make sure you’re in a virtual environment or your preferred Python setup, then run:
+        Make sure you’re in a virtual environment or your preferred Python setup, then run:
 
-```bash
-pip install -r requirements.txt
+        ```bash
+        pip install -r requirements.txt
+        ```
 
-2️⃣ Run the chatbot app
-```bash
-streamlit run app/viewer.py
-The app will launch on http://localhost:8501.
+    ### 2️⃣ Run the chatbot app
 
-🗣 Usage
-Choose between text input or voice mode.
+        ```bash
+        streamlit run app/viewer.py
+        ```
+        The app will launch on http://localhost:8501.
 
-Type your question or press the Record button to speak.
+## 🗣 Usage
 
-The bot will respond using relevant FAQs or fallback to searching official documents.
+    Choose between text input or voice mode.
 
-Answers are shown on screen and played back as audio.
+    Type your question or press the Record button to speak.
 
-All queries are logged with details to improve FAQ coverage automatically.
+    The bot will respond using relevant FAQs or fallback to searching official documents.
 
-📊 Data Files
-asked_questions_log.csv: Tracks every query with timestamp, language, question, source, answer, and frequency.
+    Answers are shown on screen and played back as audio.
 
-unanswered_questions.csv: Stores queries that couldn’t be answered.
+    All queries are logged with details to improve FAQ coverage automatically.
 
-TES_54_FAQs.xlsx / TES_54_FAQs_Marathi.xlsx: English and Marathi FAQs.
+## 📊 Data Files
+    asked_questions_log.csv: Tracks every query with timestamp, language, question, source, answer, and frequency.
 
-document_cache.pkl: Cached document embeddings for fast retrieval.
+    unanswered_questions.csv: Stores queries that couldn’t be answered.
 
-📚 Technologies Used
-Python 3.12+
+    TES_54_FAQs.xlsx / TES_54_FAQs_Marathi.xlsx: English and Marathi FAQs.
 
-Streamlit for interactive UI
+    document_cache.pkl: Cached document embeddings for fast retrieval.
 
-HuggingFace Transformers for semantic search
+## 📚 Technologies Used
+    Python 3.12+
 
-SpeechRecognition and pyttsx3/gTTS for voice features
+    Streamlit for interactive UI
 
-Pandas for data processing
+    HuggingFace Transformers for semantic search
+
+    SpeechRecognition and pyttsx3/gTTS for voice features
+
+    Pandas for data processing
 
 
