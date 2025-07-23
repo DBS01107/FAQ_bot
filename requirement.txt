@@ -12,3 +12,4 @@ pyttsx3
 pipwin
 pyaudio
 streamlit
+sentence_transformers
